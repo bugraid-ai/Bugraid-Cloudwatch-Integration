@@ -1,11 +1,11 @@
 resource "aws_lambda_function" "process_cloudwatch_events" {
   count = var.daily_event_rule ? 1 : 0
-  s3_bucket = "bugraid-cloudwatch" #aws_s3_bucket.br_lambda_bucket.bucket
-  s3_key = "CloudwatchBugRaidAddTopic.zip" #aws_s3_bucket_object.cloudwatch_lambda_zip.key
+  #s3_bucket = "bugraid-cloudwatch" #aws_s3_bucket.br_lambda_bucket.bucket
+  #s3_key = "CloudwatchBugRaidAddTopic.zip" #aws_s3_bucket_object.cloudwatch_lambda_zip.key
   # s3_bucket        = "br-lambdatest"
   # s3_key           = "CloudwatchBugRaidAddTopic.zip"
   function_name    = "BugRaid-CloudWatch-AddTopic"
- # filename = "C:/Users/Admin/Desktop/BigPanda/bugraid-cloudwatch/CloudwatchBugRaidAddTopic.zip"
+  filename = "${path.module}/CloudwatchBugRaidAddTopic.zip"
   role             = aws_iam_role.lambda_exec_role.arn
   handler          = "index.handler"
   runtime          = "nodejs20.x"
