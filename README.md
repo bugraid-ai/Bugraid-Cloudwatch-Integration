@@ -7,6 +7,9 @@ Prerequisites:
 2. AWS CLI is installed. (Install AWS CLI using https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html )
 3. AWS is configured. (Run: aws configure)
 
+Setup Instructions:
+1. Clone the repository.
+2. Navigate to the cloned repository's folder.
 RUN:
 1. terraform init
 2. terraform plan
