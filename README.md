@@ -10,6 +10,7 @@ Prerequisites:
 Setup Instructions:
 1. Clone the repository.
 2. Navigate to the cloned repository's folder.
+
 RUN:
 1. terraform init
 2. terraform plan
