@@ -1,6 +1,6 @@
 variable "subscribe_all" {
   type        = bool
-  description = "Setting this to 'true' will automatically add the BigPanda Topic to all existing CloudWatch Alarms"
+  description = "Setting this to 'true' will automatically add the BugRaid Topic to all existing CloudWatch Alarms"
 }
 
 
@@ -12,7 +12,7 @@ variable "webhook_endpoints_url" {
 
 variable "daily_event_rule" {
   type        = bool
-  description = "Setting this to 'true' will create a CloudWatch Event to run the BigPanda SubscribeAll Lambda once a day"
+  description = "Setting this to 'true' will create a CloudWatch Event to run the BugRaid SubscribeAll Lambda once a day"
 }
 
 data "aws_region" "current" {}
