@@ -1,0 +1,20 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and update the values
+
+# Set to true to automatically subscribe all CloudWatch alarms to BugRaid topic
+subscribe_all = true
+
+# Set to true to create a daily event rule for Lambda execution
+daily_event_rule = true
+
+# Webhook URL for SNS subscription
+webhook_endpoints_url = "https://your-webhook-url.com/endpoint"
+
+# Environment name (dev, staging, prod)
+environment = "dev"
+
+# Project name for resource naming
+project_name = "bugraid"
+
+# Lambda timeout in seconds (default: 300)
+lambda_timeout = 300

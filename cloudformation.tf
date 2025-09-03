@@ -1,8 +1,9 @@
 resource "aws_cloudformation_stack" "trigger_codebuild_stack" {
-  count = var.subscribe_all && var.daily_event_rule ? 1 : 0
-  name = "trigger-codebuild-stack3"
+  count = var.subscribe_all ? 1 : 0
+  name = "${var.project_name}-trigger-codebuild-${var.environment}"
+  
   parameters = {
-    bugraidlambdafunctionArn = aws_lambda_function.process_cloudwatch_events[0].arn
+    bugraidlambdafunctionArn = var.daily_event_rule ? aws_lambda_function.process_cloudwatch_events[0].arn : ""
     SubscribeAll              = var.subscribe_all
   }
 
@@ -15,7 +16,8 @@ resource "aws_cloudformation_stack" "trigger_codebuild_stack" {
       "Description" : "Setting this to 'true' will automatically add the Bugraid Topic to all existing CloudWatch Alarms"
     },
     "bugraidlambdafunctionArn" : {
-      "Type" : "String"
+      "Type" : "String",
+      "Description" : "ARN of the BugRaid Lambda function"
     }
   },
   "Conditions": {
@@ -25,6 +27,18 @@ resource "aws_cloudformation_stack" "trigger_codebuild_stack" {
           "Ref": "SubscribeAll"
         },
         "true"
+      ]
+    },
+    "HasLambdaArn": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "bugraidlambdafunctionArn"
+            },
+            ""
+          ]
+        }
       ]
     }
   },
@@ -38,7 +52,21 @@ resource "aws_cloudformation_stack" "trigger_codebuild_stack" {
       },
       "Condition": "SubscribeToAlarms"
     }
+  },
+  "Outputs": {
+    "StackStatus": {
+      "Description": "Status of the CloudFormation stack",
+      "Value": {
+        "Ref": "AWS::StackId"
+      }
+    }
   }
 }
 STACK
+
+  tags = {
+    Name        = "${var.project_name}-cloudformation-stack"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }

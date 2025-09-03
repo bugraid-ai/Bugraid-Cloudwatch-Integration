@@ -1,7 +1,7 @@
 resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
-  count       = var.daily_event_rule == true ? 1 : 0
-  name        = "cloudwatch_event_rule"
-  description = "CloudWatch Event rule to trigger Lambda function"
+  count              = var.daily_event_rule ? 1 : 0
+  name               = "${var.project_name}-cloudwatch-event-${var.environment}"
+  description        = "CloudWatch Event rule to trigger Lambda function"
   schedule_expression = "rate(2 minutes)"
   event_pattern = jsonencode({
     "source": [
@@ -11,13 +11,17 @@ resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
       "CloudWatch Alarm State Change"
     ]
   })
+
+  tags = {
+    Name        = "${var.project_name}-cloudwatch-event-rule"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
-
 resource "aws_cloudwatch_event_target" "lambda_target" {
-  count     = var.daily_event_rule == true ? 1 : 0
+  count     = var.daily_event_rule ? 1 : 0
   rule      = aws_cloudwatch_event_rule.cloudwatch_event_rule[0].name
   target_id = aws_lambda_function.process_cloudwatch_events[0].function_name
   arn       = aws_lambda_function.process_cloudwatch_events[0].arn
-
 }
