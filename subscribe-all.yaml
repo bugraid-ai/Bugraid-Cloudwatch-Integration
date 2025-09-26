@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Nested stack for subscribing all CloudWatch alarms to BugRaid Lambda
+
+Parameters:
+  SubscribeAll:
+    Type: String
+    Description: Setting this to 'true' will automatically add the BugRaid Topic to all existing CloudWatch Alarms
+
+  bugraidlambdafunctionArn:
+    Type: String
+    Description: ARN of the BugRaid Lambda function
+
+Conditions:
+  SubscribeToAlarms: !Equals [ !Ref SubscribeAll, "true" ]
+  HasLambdaArn: !Not [ !Equals [ !Ref bugraidlambdafunctionArn, "" ] ]
+
+Resources:
+  BugRaidInvokeLambda:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: SubscribeToAlarms
+    Properties:
+      ServiceToken: !Ref bugraidlambdafunctionArn
+
+Outputs:
+  StackStatus:
+    Description: Status of the nested CloudFormation stack
+    Value: !Ref AWS::StackId

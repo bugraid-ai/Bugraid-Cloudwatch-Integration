@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  BugRaid CloudWatch → SNS → Lambda → Webhook integration.
+  Deploys CloudWatch alarms integration that forwards alerts to BugRaid.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: bugraid
+    Description: Project name for resource naming
+
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name (dev, test, prod)
+
+  SubscribeAll:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Automatically subscribe all alarms to BugRaid Lambda
+
+  DailyEventRule:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Create a CloudWatch Event rule to run the Lambda on schedule
+
+  WebhookEndpointsUrl:
+    Type: String
+    Default: "https://example.com/dummy-webhook"
+    Description: HTTPS webhook endpoint for SNS subscription (set real BugRaid URL later)
+
+  LambdaTimeout:
+    Type: Number
+    Default: 300
+    Description: Lambda function timeout in seconds
+
+  LambdaCodeBucket:
+    Type: String
+    Description: S3 bucket containing the Lambda code zip
+
+  LambdaCodeKey:
+    Type: String
+    Default: "CloudwatchBugRaidAddTopic.zip"
+    Description: S3 key (file path) for the Lambda code zip
+
+Conditions:
+  EnableSubscribeAll: !Equals [!Ref SubscribeAll, "true"]
+  EnableDailyEventRule: !Equals [!Ref DailyEventRule, "true"]
+
+Resources:
+
+  ### SNS Topic + Subscription ###
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-topic-${Environment}"
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-sns-topic"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  SNSTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Protocol: https
+      Endpoint: !Ref WebhookEndpointsUrl
+
+  ### IAM Role + Policies ###
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-exec-role-${Environment}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-lambda-exec-role"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${ProjectName}-lambda-policy-${Environment}"
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-*"
+          - Effect: Allow
+            Action:
+              - sns:ConfirmSubscription
+              - sns:Publish
+            Resource: !Ref SNSTopic
+
+  LambdaCloudWatchPolicy:
+    Type: AWS::IAM::Policy
+    Condition: EnableDailyEventRule
+    Properties:
+      PolicyName: !Sub "${ProjectName}-cloudwatch-lambda-${Environment}"
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - cloudwatch:PutMetricAlarm
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:ListMetrics
+            Resource: "*"
+
+  ### Lambda Function ###
+  ProcessCloudWatchEventsLambda:
+    Type: AWS::Lambda::Function
+    Condition: EnableDailyEventRule
+    Properties:
+      FunctionName: !Sub "${ProjectName}-cloudwatch-addtopic-${Environment}"
+      Handler: index.handler
+      Runtime: nodejs20.x
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: !Ref LambdaTimeout
+      MemorySize: 256
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key: !Ref LambdaCodeKey
+      Environment:
+        Variables:
+          TOPICARN: !Ref SNSTopic
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-cloudwatch-lambda"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  LambdaInvokePermissionFromCloudWatch:
+    Type: AWS::Lambda::Permission
+    Condition: EnableDailyEventRule
+    Properties:
+      FunctionName: !Ref ProcessCloudWatchEventsLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CloudWatchEventRule.Arn   # ✅ FIXED
+
+  ### CloudWatch Event Rule + Target ###
+  CloudWatchEventRule:
+    Type: AWS::Events::Rule
+    Condition: EnableDailyEventRule
+    Properties:
+      Name: !Sub "${ProjectName}-cloudwatch-event-${Environment}"
+      Description: "CloudWatch Event rule to trigger Lambda function"
+      ScheduleExpression: "rate(2 minutes)"
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type:
+          - "CloudWatch Alarm State Change"
+      Targets:
+        - Arn: !GetAtt ProcessCloudWatchEventsLambda.Arn
+          Id: !Sub "${ProjectName}-lambda-target-${Environment}"
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-cloudwatch-event-rule"
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  ### Nested Stack for SubscribeAll ###
+  TriggerCodeBuildStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: EnableSubscribeAll
+    Properties:
+      TemplateURL: !Sub "https://s3.${AWS::Region}.amazonaws.com/${LambdaCodeBucket}/subscribe-all.yaml"
+      Parameters:
+        SubscribeAll: !Ref SubscribeAll
+        bugraidlambdafunctionArn: !If [EnableDailyEventRule, !GetAtt ProcessCloudWatchEventsLambda.Arn, ""]
+
+Outputs:
+  SnsTopicArn:
+    Description: ARN of the SNS topic
+    Value: !Ref SNSTopic
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !If [EnableDailyEventRule, !GetAtt ProcessCloudWatchEventsLambda.Arn, "N/A"]
+  CloudWatchEventRuleName:
+    Description: Name of the CloudWatch event rule
+    Value: !If [EnableDailyEventRule, !Ref CloudWatchEventRule, "N/A"]
+  LambdaExecutionRole:
+    Description: Name of the Lambda execution role
+    Value: !Ref LambdaExecutionRole
+  Environment:
+    Description: Environment name
+    Value: !Ref Environment
+  Project:
+    Description: Project name
+    Value: !Ref ProjectName
+  AwsRegion:
+    Description: AWS region where resources are deployed
+    Value: !Ref AWS::Region
+  AwsAccountId:
+    Description: AWS account ID where resources are deployed
+    Value: !Ref AWS::AccountId
+
