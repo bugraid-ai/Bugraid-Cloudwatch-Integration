@@ -58,9 +58,19 @@ aws configure
 ```
 ### 3. Upload Lambda Code + Nested Template to S3
 ```bash
-aws s3 mb s3://cloudwatch-integration-cft-test-bucket --region us-west-1  #change the region 
-aws s3 cp CloudwatchBugRaidAddTopic.zip s3://cloudwatch-integration-cft-test-bucket/
-aws s3 cp subscribe-all.yaml s3://cloudwatch-integration-cft-test-bucket/
+
+## FORMAT TO FOLLOW
+Bucket Creation Format:
+aws s3 mb s3://<your-bucket-name> --region <your-region>
+
+Upload Format: 
+aws s3 cp <local-path>/CloudwatchBugRaidAddTopic.zip s3://<your-bucket-name>/ --region <your-region>
+aws s3 cp <local-path>/subscribe-all.yaml s3://<your-bucket-name>/ --region <your-region>
+
+Example (Windows, US-West-1) # change region if testing.
+aws s3 cp "C:\Users\JohnDoe\Downloads\CloudwatchBugRaidAddTopic.zip" s3://cloudwatch-integration-cft-test-bucket/ --region us-west-1
+aws s3 cp "C:\Users\JohnDoe\Downloads\subscribe-all.yaml" s3://cloudwatch-integration-cft-test-bucket/ --region us-west-1
+
 
 ```
 ### 4. Deploy the CloudFormation Stack
