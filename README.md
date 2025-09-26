@@ -98,7 +98,7 @@ aws cloudformation delete-stack \
   --region us-west-1      #change the region while testing
 
 ```
-⚙️ Parameters
+## ⚙️ Parameters
 
 ProjectName → Used for resource naming (bugraid by default)
 
@@ -116,8 +116,8 @@ LambdaCodeBucket → S3 bucket containing Lambda zip
 
 LambdaCodeKey → Name of the Lambda zip file in S3
 
-## ✅ In short: This repo is the CFT equivalent of the Terraform integration, showing up in SNS, Lambda, CloudWatch, and CloudFormation consoles after deployment.
+### ✅ In short: This repo is the CFT equivalent of the Terraform integration, showing up in SNS, Lambda, CloudWatch, and CloudFormation consoles after deployment.
 Teams only need to adjust the Webhook URL and deployment parameters when reusing.
 
 ## ⚡ Note on Naming
-The --stack-name parameter only defines the name of the CloudFormation stack itself (the container in AWS). It does not control the names of the resources inside. Resource names (SNS topic, Lambda, IAM roles, etc.) are driven by the ProjectName and Environment parameters. The defaults in the template are just fallbacks — whenever you pass new values through --parameter-overrides, those will override the defaults and resources will be created with the new names. For example, using ProjectName=mytest and Environment=staging will produce resources like mytest-topic-staging and mytest-lambda-exec-role-staging, regardless of the template’s default values.
+The --stack-name parameter only defines the name of the CloudFormation stack itself (the container in AWS). It does not control the names of the resources inside. Resource names (SNS topic, Lambda, IAM roles, etc.) are driven by the ProjectName and Environment parameters. The defaults in the template are just fallbacks whenever you pass new values through --parameter-overrides, those will override the defaults and resources will be created with the new names. For example, using ProjectName=mytest and Environment=staging will produce resources like mytest-topic-staging and mytest-lambda-exec-role-staging, regardless of the template’s default values.
