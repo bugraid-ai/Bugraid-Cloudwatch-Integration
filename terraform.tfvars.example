@@ -18,3 +18,6 @@ project_name = "bugraid"
 
 # Lambda timeout in seconds (default: 300)
 lambda_timeout = 300
+
+# region
+aws_region = ""
