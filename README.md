@@ -8,7 +8,7 @@ Automatically connect all your AWS CloudWatch alarms to [BugRaid AI](https://bug
 Your AWS Account
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
-│  EventBridge Rule (every 2 min)                         │
+│  EventBridge Rule (every 5 min)                         │
 │       │                                                 │
 │       ▼                                                 │
 │  Lambda Function                                        │
@@ -27,7 +27,7 @@ Your AWS Account
 |----------|---------|
 | SNS Topic | Receives alarm notifications and forwards to BugRaid |
 | Lambda Function | Discovers new alarms and subscribes them to the SNS topic |
-| EventBridge Rule | Triggers the Lambda every 2 minutes |
+| EventBridge Rule | Triggers the Lambda every 5 minutes |
 | IAM Role & Policy | Least-privilege permissions for the Lambda |
 
 ## Prerequisites
@@ -88,7 +88,7 @@ terraform plan
 terraform apply
 ```
 
-That's it. Within 2 minutes, all your existing CloudWatch alarms will be connected to BugRaid. Any new alarms you create will be automatically discovered and connected.
+That's it. Within 5 minutes, all your existing CloudWatch alarms will be connected to BugRaid. Any new alarms you create will be automatically discovered and connected.
 
 ### Step 4: Verify
 
@@ -114,7 +114,7 @@ aws logs tail /aws/lambda/BugRaid-CloudWatch-AddTopic-your-company-name --since 
 |----------|----------|---------|-------------|
 | `identifier` | Yes | — | Unique name for your deployment (e.g., company name). 2-32 chars, alphanumeric and hyphens. |
 | `webhook_endpoints_url` | Yes | — | Your BugRaid webhook URL (provided in your BugRaid dashboard). Must be HTTPS. |
-| `daily_event_rule` | No | `true` | Enables automatic alarm discovery every 2 minutes. |
+| `daily_event_rule` | No | `true` | Enables automatic alarm discovery every 5 minutes. |
 | `aws_region` | No | AWS CLI default | AWS region to deploy in (e.g., `us-east-1`). |
 | `tags` | No | `{}` | Custom tags applied to all resources for cost tracking. |
 
@@ -188,7 +188,7 @@ All alarm data flows over HTTPS. Your webhook URL is marked as sensitive in Terr
 
 ### "No alarms to update" in Lambda logs
 
-This is normal — it means all alarms are already subscribed to BugRaid. The Lambda runs every 2 minutes and skips alarms that are already connected.
+This is normal — it means all alarms are already subscribed to BugRaid. The Lambda runs every 5 minutes and skips alarms that are already connected.
 
 ### Alarms not appearing in BugRaid
 
@@ -236,7 +236,7 @@ This integration has minimal AWS cost:
 
 | Resource | Estimated Monthly Cost |
 |----------|----------------------|
-| Lambda (every 2 min, ~1s per run) | ~$0.00 (within free tier) |
+| Lambda (every 5 min, ~1s per run) | ~$0.00 (within free tier) |
 | SNS topic + HTTPS delivery | ~$0.00 (within free tier for typical alarm volume) |
 | EventBridge rule | Free |
 | **Total** | **< $1/month** |

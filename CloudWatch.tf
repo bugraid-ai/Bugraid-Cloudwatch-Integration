@@ -2,7 +2,7 @@ resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
   count               = var.daily_event_rule == true ? 1 : 0
   name                = "bugraid-cloudwatch-event-rule-${var.identifier}"
   description         = "Triggers BugRaid Lambda to subscribe new CloudWatch alarms"
-  schedule_expression = "rate(2 minutes)"
+  schedule_expression = "rate(5 minutes)"
 
   tags = merge(var.tags, {
     Name        = "bugraid-cloudwatch-event-rule-${var.identifier}"

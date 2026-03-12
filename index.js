@@ -205,6 +205,39 @@ const removeBugRaidTopic = (alarms) => {
 };
 
 /**
+ * Sanitizes a DescribeAlarms response object for use with PutMetricAlarmCommand.
+ * Removes read-only fields and resolves conflicts between Dimensions and Metrics.
+ * @param {Object} alarm Raw alarm from DescribeAlarms
+ * @returns {Object} Alarm safe for PutMetricAlarm
+ */
+const sanitizeAlarmForPut = (alarm) => {
+  const sanitized = { ...alarm };
+
+  // Remove read-only fields returned by DescribeAlarms
+  delete sanitized.AlarmArn;
+  delete sanitized.AlarmConfigurationUpdatedTimestamp;
+  delete sanitized.StateValue;
+  delete sanitized.StateReason;
+  delete sanitized.StateReasonData;
+  delete sanitized.StateUpdatedTimestamp;
+  delete sanitized.StateTransitionedTimestamp;
+
+  // Metric math alarms use Metrics array — Dimensions/MetricName/Namespace/Statistic/Period
+  // must NOT be set alongside Metrics
+  if (sanitized.Metrics && sanitized.Metrics.length > 0) {
+    delete sanitized.Dimensions;
+    delete sanitized.MetricName;
+    delete sanitized.Namespace;
+    delete sanitized.Statistic;
+    delete sanitized.ExtendedStatistic;
+    delete sanitized.Period;
+    delete sanitized.Unit;
+  }
+
+  return sanitized;
+};
+
+/**
  * Updates CloudWatch Alarms
  * @param {Array} alarms CloudWatch Alarms to update
  * @returns {Array} Results from updating alarms
@@ -214,12 +247,14 @@ const updateAlarms = async (alarms) => {
   // CloudWatch PutMetricAlarm rate limit is ~3 TPS; 350ms between calls is safe
   const delayMs = 350;
 
-  for (let alarm of alarms) {
+  for (let i = 0; i < alarms.length; i++) {
+    const alarm = alarms[i];
     try {
       console.log(`Updating alarm: ${alarm.AlarmName}`);
-      let result = await CloudWatch.send(new PutMetricAlarmCommand(alarm));
+      const sanitized = sanitizeAlarmForPut(alarm);
+      await CloudWatch.send(new PutMetricAlarmCommand(sanitized));
       results.push({ success: true, alarmName: alarm.AlarmName });
-      if (alarms.indexOf(alarm) < alarms.length - 1) {
+      if (i < alarms.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     } catch (error) {
