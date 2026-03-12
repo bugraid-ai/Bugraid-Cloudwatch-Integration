@@ -1,0 +1,27 @@
+# =============================================================================
+# BugRaid CloudWatch Integration - Configuration
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your values:
+#   cp terraform.tfvars.example terraform.tfvars
+# =============================================================================
+
+# REQUIRED: Your unique deployment identifier
+# Use your company name or team name (2-32 chars, alphanumeric and hyphens)
+identifier = "your-company-name"
+
+# REQUIRED: Your BugRaid webhook URL (provided in your BugRaid dashboard)
+webhook_endpoints_url = "https://app.bugraid.ai/webhook/your-webhook-key"
+
+# OPTIONAL: AWS region (defaults to your AWS CLI configured region)
+# aws_region = "us-east-1"
+
+# OPTIONAL: Enable automatic alarm discovery (default: true)
+# When true, a Lambda runs every 2 minutes to find and subscribe new alarms
+# daily_event_rule = true
+
+# OPTIONAL: Resource tags for cost tracking and organization
+# tags = {
+#   Team        = "platform"
+#   Environment = "production"
+#   CostCenter  = "engineering"
+# }

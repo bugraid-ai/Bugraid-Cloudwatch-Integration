@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_exec_role" {
-  name = "lambda_exec_role"
+  name = "bugraid-cw-lambda-role-${var.identifier}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -12,69 +12,65 @@ resource "aws_iam_role" "lambda_exec_role" {
       }
     ]
   })
+
+  tags = merge(var.tags, {
+    Name        = "bugraid-cw-lambda-role-${var.identifier}"
+    ManagedBy   = "bugraid"
+    Environment = var.identifier
+  })
 }
 
-
 resource "aws_iam_policy" "lambda_policy" {
-  name = "lambda_policy"
+  name = "bugraid-cw-lambda-policy-${var.identifier}"
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
+        Sid = "AllowLogging"
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents",
+          "logs:PutLogEvents"
+        ],
+        Effect   = "Allow",
+        Resource = "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/BugRaid-CloudWatch-AddTopic-${var.identifier}:*"
+      },
+      {
+        Sid = "AllowSNSPublish"
+        Action = [
+          "sns:Publish",
           "sns:ConfirmSubscription"
         ],
-        Effect = "Allow",
+        Effect   = "Allow",
+        Resource = aws_sns_topic.sns_topic.arn
+      },
+      {
+        Sid = "AllowDescribeAlarms"
+        Action = [
+          "cloudwatch:DescribeAlarms"
+        ],
+        Effect   = "Allow",
         Resource = "*"
       },
       {
-        Action = "sns:Publish",
-        Effect = "Allow",
-        Resource = "*"
+        Sid = "AllowPutMetricAlarm"
+        Action = [
+          "cloudwatch:PutMetricAlarm"
+        ],
+        Effect   = "Allow",
+        Resource = "arn:aws:cloudwatch:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:alarm:*"
       }
     ]
+  })
+
+  tags = merge(var.tags, {
+    Name        = "bugraid-cw-lambda-policy-${var.identifier}"
+    ManagedBy   = "bugraid"
+    Environment = var.identifier
   })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_policy_attach" {
   role       = aws_iam_role.lambda_exec_role.name
   policy_arn = aws_iam_policy.lambda_policy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  count       = var.daily_event_rule ? 1 : 0
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy_attachment" "sns_publish_policy" {
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
-}
-
-
-data "aws_iam_policy_document" "bugraid_cloudwatch_lambda" {
-  statement {
-    sid    = "AllowBugraidLambdaToListAlarms"
-    effect = "Allow"
-    actions = [
-      "cloudwatch:PutMetricAlarm",
-      "cloudwatch:DescribeAlarms"
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "bugraid_cloudwatch_lambda" {
-  name   = "BugraidCloudWatchLambda"
-  policy = data.aws_iam_policy_document.bugraid_cloudwatch_lambda.json
-}
-
-resource "aws_iam_role_policy_attachment" "BugraidCloudWatchLambda_policy" {
-  count      = var.daily_event_rule ? 1 : 0
-  role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = aws_iam_policy.bugraid_cloudwatch_lambda.arn
 }

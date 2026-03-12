@@ -1,0 +1,21 @@
+{
+  "name": "bugraid-cloudwatch-lambda",
+  "version": "1.0.0",
+  "description": "BugRaid CloudWatch integration Lambda function",
+  "main": "index.js",
+  "scripts": {
+    "build": "zip -r CloudwatchBugRaidAddTopic.zip index.js node_modules package.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.650.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "bugraid",
+    "cloudwatch",
+    "lambda",
+    "aws"
+  ],
+  "author": "BugRaid Team",
+  "license": "MIT"
+}

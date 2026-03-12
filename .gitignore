@@ -1,0 +1,23 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+
+# Customer-specific config (contains webhook URL)
+terraform.tfvars
+
+# Node.js
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+test.js
