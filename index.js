@@ -4,7 +4,6 @@ const {
   PutMetricAlarmCommand,
 } = require("@aws-sdk/client-cloudwatch");
 const https = require("https");
-const url = require("url");
 
 /**
  * Will add the BugRaid Topic to all
@@ -104,7 +103,13 @@ const addTopicToAlarms = async () => {
 
     if (alarms.length > 0) {
       const results = await updateAlarms(alarms);
-      console.log(`Updated ${alarms.length} alarms successfully`);
+      const succeeded = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      console.log(`Update complete: ${succeeded} succeeded, ${failed} failed out of ${alarms.length} alarms`);
+      if (failed > 0) {
+        const failedNames = results.filter(r => !r.success).map(r => r.alarmName).join(', ');
+        console.error(`Failed alarms: ${failedNames}`);
+      }
     } else {
       console.log("No alarms to update");
     }
@@ -129,7 +134,13 @@ const removeTopicFromAlarms = async () => {
 
     if (alarms.length > 0) {
       const results = await updateAlarms(alarms);
-      console.log(`Updated ${alarms.length} alarms successfully`);
+      const succeeded = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      console.log(`Removal complete: ${succeeded} succeeded, ${failed} failed out of ${alarms.length} alarms`);
+      if (failed > 0) {
+        const failedNames = results.filter(r => !r.success).map(r => r.alarmName).join(', ');
+        console.error(`Failed alarms: ${failedNames}`);
+      }
     } else {
       console.log("No alarms to update");
     }
@@ -279,12 +290,12 @@ const cfResponse = (event, context, responseStatus, reason) => {
 
     console.log('Sending CloudFormation response:', responseBody);
 
-    const parsedUrl = url.parse(event.ResponseURL);
+    const parsedUrl = new URL(event.ResponseURL);
 
     const options = {
       hostname: parsedUrl.hostname,
       port: 443,
-      path: parsedUrl.path,
+      path: parsedUrl.pathname + parsedUrl.search,
       method: "PUT",
       headers: {
         "content-type": "application/json",

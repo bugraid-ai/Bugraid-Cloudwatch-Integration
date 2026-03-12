@@ -16,4 +16,9 @@ resource "aws_cloudwatch_event_target" "lambda_target" {
   rule      = aws_cloudwatch_event_rule.cloudwatch_event_rule[0].name
   target_id = aws_lambda_function.process_cloudwatch_events[0].function_name
   arn       = aws_lambda_function.process_cloudwatch_events[0].arn
+
+  retry_policy {
+    maximum_retry_attempts       = 0
+    maximum_event_age_in_seconds = 300
+  }
 }

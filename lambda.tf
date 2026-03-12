@@ -4,7 +4,7 @@ resource "aws_lambda_function" "process_cloudwatch_events" {
   filename         = "${path.module}/CloudwatchBugRaidAddTopic.zip"
   role             = aws_iam_role.lambda_exec_role.arn
   handler          = "index.handler"
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs22.x"
   timeout          = 120
   memory_size      = 128
   source_code_hash = filebase64sha256("${path.module}/CloudwatchBugRaidAddTopic.zip")
