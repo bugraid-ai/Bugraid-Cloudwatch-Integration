@@ -162,16 +162,20 @@ const addBugRaidTopic = (alarms) => {
   }
 
   return alarms.reduce((modified, alarm) => {
-    const hasBugRaidTopic = alarm.AlarmActions && alarm.AlarmActions.includes(topicArn);
+    const hasAlarmTopic = alarm.AlarmActions && alarm.AlarmActions.includes(topicArn);
+    const hasOkTopic = alarm.OKActions && alarm.OKActions.includes(topicArn);
+    const hasInsufficientTopic = alarm.InsufficientDataActions && alarm.InsufficientDataActions.includes(topicArn);
 
-    if (!hasBugRaidTopic) {
+    if (!hasAlarmTopic || !hasOkTopic || !hasInsufficientTopic) {
       console.log(`Adding BugRaid Topic to alarm: ${alarm.AlarmName}`);
       modified.push({
         ...alarm,
-        AlarmActions: [...(alarm.AlarmActions || []), topicArn],
+        AlarmActions: hasAlarmTopic ? alarm.AlarmActions : [...(alarm.AlarmActions || []), topicArn],
+        OKActions: hasOkTopic ? alarm.OKActions : [...(alarm.OKActions || []), topicArn],
+        InsufficientDataActions: hasInsufficientTopic ? alarm.InsufficientDataActions : [...(alarm.InsufficientDataActions || []), topicArn],
       });
     } else {
-      console.log(`Alarm ${alarm.AlarmName} already has BugRaid Topic, skipping`);
+      console.log(`Alarm ${alarm.AlarmName} already has all BugRaid Topics, skipping`);
     }
     return modified;
   }, []);
@@ -189,13 +193,17 @@ const removeBugRaidTopic = (alarms) => {
   }
 
   return alarms.reduce((modified, alarm) => {
-    const hasBugRaidTopic = alarm.AlarmActions && alarm.AlarmActions.includes(topicArn);
+    const hasAlarmTopic = alarm.AlarmActions && alarm.AlarmActions.includes(topicArn);
+    const hasOkTopic = alarm.OKActions && alarm.OKActions.includes(topicArn);
+    const hasInsufficientTopic = alarm.InsufficientDataActions && alarm.InsufficientDataActions.includes(topicArn);
 
-    if (hasBugRaidTopic) {
+    if (hasAlarmTopic || hasOkTopic || hasInsufficientTopic) {
       console.log(`Removing BugRaid Topic from alarm: ${alarm.AlarmName}`);
       modified.push({
         ...alarm,
-        AlarmActions: alarm.AlarmActions.filter(action => action !== topicArn),
+        AlarmActions: alarm.AlarmActions ? alarm.AlarmActions.filter(action => action !== topicArn) : [],
+        OKActions: alarm.OKActions ? alarm.OKActions.filter(action => action !== topicArn) : [],
+        InsufficientDataActions: alarm.InsufficientDataActions ? alarm.InsufficientDataActions.filter(action => action !== topicArn) : [],
       });
     } else {
       console.log(`Alarm ${alarm.AlarmName} doesn't have BugRaid Topic, skipping`);
