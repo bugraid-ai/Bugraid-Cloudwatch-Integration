@@ -9,8 +9,6 @@ resource "aws_lambda_function" "process_cloudwatch_events" {
   memory_size      = 128
   source_code_hash = filebase64sha256("${path.module}/CloudwatchBugRaidAddTopic.zip")
 
-  reserved_concurrent_executions = 1
-
   environment {
     variables = {
       TOPICARN = aws_sns_topic.sns_topic.arn
